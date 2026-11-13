@@ -1,0 +1,385 @@
+{
+  "name": "Firmen-Check Labor",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Firmen-Check",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "website"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c84ec53b-7807-4210-b480-5b33d913473e",
+      "name": "Formular",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "889d71c0-f9e2-4e06-b79b-13721ff66ab9"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cf457fe5-86a2-44f8-99bd-29612ebb6e2f",
+              "name": "url",
+              "value": "={{ $json.website.trim().toLowerCase().startsWith('http') ? $json.website.trim() : 'https://' + $json.website.trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e1bad9b3-9d7e-4970-9898-ffc17339d720",
+      "name": "Adresse aufräumen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "805f7418-be5a-41e5-b7bb-56ee60fa5122",
+      "name": "Website holen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": "title"
+            },
+            {
+              "key": "beschreibung",
+              "cssSelector": "meta[name=\"description\"]",
+              "returnValue": "attribute",
+              "attribute": "content"
+            },
+            {
+              "key": "h1",
+              "cssSelector": "h1",
+              "returnArray": true
+            },
+            {
+              "key": "h2",
+              "cssSelector": "h2",
+              "returnArray": true
+            },
+            {
+              "key": "text",
+              "cssSelector": "body",
+              "skipSelectors": "script,style,noscript,svg"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "147ef62e-778e-488d-9188-eb0fa0d60539",
+      "name": "Wichtiges auslesen",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d61a102d-d32b-4524-9a55-d6c7500dccfd",
+              "name": "url",
+              "value": "={{ $('Adresse aufräumen').item.json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "f304f0de-b4e8-4f12-b806-ad247cfcbf2f",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "e96cbbdb-9064-49d4-b52d-c6568a2e4d08",
+              "name": "title_laenge",
+              "value": "={{ ($json.title || '').length }}",
+              "type": "number"
+            },
+            {
+              "id": "ac7cfc0c-b248-4e7f-a6b0-f32dfca2160e",
+              "name": "beschreibung",
+              "value": "={{ $json.beschreibung }}",
+              "type": "string"
+            },
+            {
+              "id": "95a868df-4b0a-4036-a69e-4eabf9506451",
+              "name": "beschreibung_laenge",
+              "value": "={{ ($json.beschreibung || '').length }}",
+              "type": "number"
+            },
+            {
+              "id": "09bf14a0-8707-4088-9144-30229dee10b1",
+              "name": "h1_anzahl",
+              "value": "={{ ($json.h1 || []).length }}",
+              "type": "number"
+            },
+            {
+              "id": "ebc55719-7644-461e-ba14-515737a063a1",
+              "name": "h1",
+              "value": "={{ ($json.h1 || []).join(' | ') }}",
+              "type": "string"
+            },
+            {
+              "id": "4142f59e-b952-4234-846e-a4442362ca7d",
+              "name": "h2",
+              "value": "={{ ($json.h2 || []).slice(0, 15).join(' | ') }}",
+              "type": "string"
+            },
+            {
+              "id": "70e0a643-04ec-401e-8aa3-e8339fcf0bc1",
+              "name": "text",
+              "value": "={{ ($json.text || '').slice(0, 5000) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "269049dc-b952-44d3-b461-ccfff52bbf46",
+      "name": "Für Claude vorbereiten",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        0,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "claude-haiku-4-5-20251001"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=URL: {{ $json.url }}\nTitle ({{ $json.title_laenge }} Zeichen): {{ $json.title }}\nMeta-Description ({{ $json.beschreibung_laenge }} Zeichen): {{ $json.beschreibung }}\nAnzahl H1: {{ $json.h1_anzahl }}\nH1: {{ $json.h1 }}\nH2: {{ $json.h2 }}\nText der Startseite: {{ $json.text }}"
+            }
+          ]
+        },
+        "options": {
+          "system": "Du bist Analyst bei trendymarketing. Du prüfst die SEO-Grundlagen einer Website nach genau vier Regeln. Regel 1: Title-Länge muss zwischen 30 und 60 Zeichen liegen, sonst minus 0,5 Punkte. Regel 2: Meta-Description-Länge muss zwischen 70 und 160 Zeichen liegen, sonst minus 0,5 Punkte. Regel 3: Es muss genau eine H1 vorhanden sein, sonst minus 0,5 Punkte. Regel 4: Es müssen mindestens zwei H2 vorhanden sein, sonst minus 0,5 Punkte. Ausgangsnote ist 6. Die seo_note ist immer eine ganze Zahl von 1 bis 6. Schreib in seo_schwaechen und ansatzpunkte nur die Fehler, die du wirklich gefunden hast – maximal drei Sätze pro Feld. Erfinde keine anderen Fehler. Antworte immer mit genau diesem JSON-Format mit allen sieben Feldern, keine Backticks, keine Zeilenumbrüche, keine zusätzlichen Zeichen: {\"firma\": \"Beispiel GmbH\", \"branche\": \"Handel\", \"angebot\": \"Online-Shop\", \"seo_note\": 5, \"seo_schwaechen\": \"Title zu kurz\", \"ansatzpunkte\"e auf 40 Zeichen erweitern\", \"fazit\": \"Gute Basis\"}.",
+          "maxTokens": 1200,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        288,
+        192
+      ],
+      "id": "3f1bf604-4fe6-4eaa-9b34-8b06e575136e",
+      "name": "Claude analysiert",
+      "credentials": {
+        "anthropicApi": {
+          "id": "fBINadOSI63j4eUx",
+          "name": "Praktikum"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Läuft einmal pro Website\nconst roh = $json.content?.find(c => c.type === 'text')?.text ?? '';\nconst sauber = roh.replace(/```json/g, '').replace(/```/g, '').trim();\n\nlet analyse = null;\nconst fehler = [];\n\ntry {\n  analyse = JSON.parse(sauber);\n} catch (e) {\n  fehler.push('Kein gültiges JSON: ' + e.message);\n}\n\nif (analyse) {\n  const pflicht = ['firma', 'branche', 'angebot', 'seo_note', 'seo_schwaechen', 'ansatzpunkte', 'fazit'];\n  for (const feld of pflicht) {\n    if (analyse[feld] === undefined || analyse[feld] === '') fehler.push('Feld fehlt: ' + feld);\n  }\n\n  // DEINE AUFGABE: Prüfe hier, ob seo_note eine ganze Zahl von 1 bis 6 ist.\n  if (!Number.isInteger(analyse.seo_note) || analyse.seo_note < 1 || analyse.seo_note > 6) fehler.push('seo_note muss eine ganze Zahl von 1 bis 6 sein');\n  \n  // Wenn nicht, hängst du mit fehler.push(...) einen Fehler an.\n\n}\n\nreturn {\n  json: {\n    url: $('Für Claude vorbereiten').item.json.url,\n    ok: fehler.length === 0,\n    fehler,\n    analyse,\n    roh\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        192
+      ],
+      "id": "a7b67f78-a13f-498a-8023-c32f86460fa1",
+      "name": "Antwort prüfen"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "7e335f1e-d9f2-47ca-a6ac-7231dfa12d49",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        0,
+        448
+      ],
+      "id": "14dae1ab-3f99-459a-b4fc-3c7a0c7e7de4",
+      "name": "Alles ok?"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        176,
+        576
+      ],
+      "id": "31d4834c-28ba-4f7e-8048-d3ed35ec982f",
+      "name": "Kaputte Antwort"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Formular": {
+      "main": [
+        [
+          {
+            "node": "Adresse aufräumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adresse aufräumen": {
+      "main": [
+        [
+          {
+            "node": "Website holen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Website holen": {
+      "main": [
+        [
+          {
+            "node": "Wichtiges auslesen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wichtiges auslesen": {
+      "main": [
+        [
+          {
+            "node": "Für Claude vorbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Für Claude vorbereiten": {
+      "main": [
+        [
+          {
+            "node": "Claude analysiert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude analysiert": {
+      "main": [
+        [
+          {
+            "node": "Antwort prüfen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Antwort prüfen": {
+      "main": [
+        [
+          {
+            "node": "Alles ok?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alles ok?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Kaputte Antwort",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "41256eaf-a32e-42ed-8a75-8b4b9f2e9efe",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d42e1340d9b8c21d7d3bbd75901eef3f7b93265a8bebf6e34f82d320e5a69bf"
+  },
+  "nodeGroups": [],
+  "id": "kybGVNGcQ00h3fN4",
+  "tags": []
+}

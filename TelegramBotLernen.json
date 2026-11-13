@@ -1,0 +1,260 @@
+{
+  "name": "TelegramBotLernen",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        -96
+      ],
+      "id": "ee9590a8-1afa-4231-8133-96ddf1bd5a2f",
+      "name": "Telegram Trigger",
+      "webhookId": "8bd297f5-38d3-4695-8479-9f255b970587",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ibv1A3slkU3NFJam",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "a65c1b6e-98a6-4907-992e-327fc1bbadfa",
+                    "leftValue": "={{ $json.message.document }}",
+                    "operator": {
+                      "operation": "exists",
+                      "singleValue": true,
+                      "type": "object"
+                    },
+                    "rightValue": ""
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                }
+              },
+              "renameOutput": true,
+              "outputKey": "Dokument"
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "eae15195-0673-4f5e-b551-75f7c5b87026",
+                    "leftValue": "={{ $json.message.photo }}",
+                    "operator": {
+                      "operation": "exists",
+                      "singleValue": true,
+                      "type": "array"
+                    },
+                    "rightValue": ""
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                }
+              },
+              "renameOutput": true,
+              "outputKey": "Foto"
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "74b81959-e61a-4ba8-a170-bd707bbdb3ee",
+                    "leftValue": "={{ $json.message.text }}",
+                    "operator": {
+                      "operation": "notEmpty",
+                      "singleValue": true,
+                      "type": "string"
+                    },
+                    "rightValue": ""
+                  }
+                ],
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                }
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        -112
+      ],
+      "id": "c9e4d459-9a23-4bbe-b5b9-5db243613a49",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.document.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        -96
+      ],
+      "id": "d6d2fe05-51bd-463c-a663-f7eaa96f3741",
+      "name": "Get a file",
+      "webhookId": "46daa87f-adbe-49cf-879e-dd997325a08d",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ibv1A3slkU3NFJam",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.content.find(c => c.type === 'text').text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1248,
+        -96
+      ],
+      "id": "d3786b60-1d5f-44f5-9525-f35718fefbd4",
+      "name": "Send a text message",
+      "webhookId": "d40109b7-bd1c-4e92-812a-83ef8dfed725",
+      "credentials": {
+        "telegramApi": {
+          "id": "Ibv1A3slkU3NFJam",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "modelId": {
+          "__rl": true,
+          "cachedResultName": "claude-haiku-5-5",
+          "mode": "list",
+          "value": "claude-haiku-5-5"
+        },
+        "text": "Du bist ein professioneller Lehrer und Prüfungssteller. Analysiere den gesamten Lernstoff im angehängten Dokument sorgfältig. Das Dokument kann auch ein eingescanntes Foto oder eine Handschrift sein, lies es dann genau. Erstelle daraus einen abwechslungsreichen und fachlich korrekten Test. Verwende unterschiedliche Aufgabentypen:\n- Multiple Choice\n- Offene Fragen\n- Verständnisfragen\n- Anwendungsaufgaben\nVerwende ausschließlich Informationen aus dem Lernstoff.\nErstelle zusätzlich einen separaten Lösungsteil mit allen richtigen Antworten und kurzen, nachvollziehbaren Erklärungen.\nDie gesamte Antwort darf höchstens 3500 Zeichen lang sein, weil sie per Telegram verschickt wird.",
+        "inputType": "binary",
+        "options": {
+          "maxTokens": 4000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        672,
+        -96
+      ],
+      "id": "faa59375-2ef2-43ad-9df6-2e2a8a175785",
+      "name": "Analyze document",
+      "credentials": {
+        "anthropicApi": {
+          "id": "fBINadOSI63j4eUx",
+          "name": "Praktikum"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Analyze document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze document": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "2b3ae25c-f916-495b-8613-93ee5f178f5d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "instanceId": "4d42e1340d9b8c21d7d3bbd75901eef3f7b93265a8bebf6e34f82d320e5a69bf"
+  },
+  "nodeGroups": [],
+  "id": "hFtWOTfZHtohl0va",
+  "tags": []
+}

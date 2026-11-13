@@ -1,0 +1,653 @@
+{
+  "name": "Firmen-Check",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4b749a12-bb1f-487e-b228-f550b5dd150d",
+              "name": "url",
+              "value": "={{ $json.body.website.trim().toLowerCase().startsWith('http') ? $json.body.website.trim() : 'https://' + $json.body.website.trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5fce3b7b-3c54-4034-9fc1-ab6b0fe58ca1",
+      "name": "Adresse aufräumen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "id": "702f5e45-17ed-4d11-827d-0e5c1fccebc5",
+      "name": "Website holen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        672,
+        0
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": "title"
+            },
+            {
+              "key": "beschreibung",
+              "cssSelector": "meta[name=\"description\"]",
+              "returnValue": "attribute",
+              "attribute": "content"
+            },
+            {
+              "key": "h1",
+              "cssSelector": "h1",
+              "returnArray": true
+            },
+            {
+              "key": "h2",
+              "cssSelector": "h2",
+              "returnArray": true
+            },
+            {
+              "key": "text",
+              "cssSelector": "body",
+              "skipSelectors": "script,style,noscript,svg"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1c7b5366-b59a-4a88-b651-6dc747fb9300",
+      "name": "Wichtiges auslesen",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d61a102d-d32b-4524-9a55-d6c7500dccfd",
+              "name": "url",
+              "value": "={{ $('Adresse aufräumen').item.json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "f304f0de-b4e8-4f12-b806-ad247cfcbf2f",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "e96cbbdb-9064-49d4-b52d-c6568a2e4d08",
+              "name": "title_laenge",
+              "value": "={{ ($json.title || '').length }}",
+              "type": "number"
+            },
+            {
+              "id": "ac7cfc0c-b248-4e7f-a6b0-f32dfca2160e",
+              "name": "beschreibung",
+              "value": "={{ $json.beschreibung }}",
+              "type": "string"
+            },
+            {
+              "id": "95a868df-4b0a-4036-a69e-4eabf9506451",
+              "name": "beschreibung_laenge",
+              "value": "={{ ($json.beschreibung || '').length }}",
+              "type": "number"
+            },
+            {
+              "id": "09bf14a0-8707-4088-9144-30229dee10b1",
+              "name": "h1_anzahl",
+              "value": "={{ ($json.h1 || []).length }}",
+              "type": "number"
+            },
+            {
+              "id": "ebc55719-7644-461e-ba14-515737a063a1",
+              "name": "h1",
+              "value": "={{ ($json.h1 || []).join(' | ') }}",
+              "type": "string"
+            },
+            {
+              "id": "4142f59e-b952-4234-846e-a4442362ca7d",
+              "name": "h2",
+              "value": "={{ ($json.h2 || []).slice(0, 15).join(' | ') }}",
+              "type": "string"
+            },
+            {
+              "id": "70e0a643-04ec-401e-8aa3-e8339fcf0bc1",
+              "name": "text",
+              "value": "={{ ($json.text || '').slice(0, 5000) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "447de5ef-79fa-4529-ab7a-1434687348d5",
+      "name": "Für Claude vorbereiten",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        0,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "claude-haiku-4-5-20251001"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=URL: {{ $json.url }}\nTitle ({{ $json.title_laenge }} Zeichen): {{ $json.title }}\nMeta-Description ({{ $json.beschreibung_laenge }} Zeichen): {{ $json.beschreibung }}\nAnzahl H1: {{ $json.h1_anzahl }}\nH1: {{ $json.h1 }}\nH2: {{ $json.h2 }}\nText der Startseite: {{ $json.text }}"
+            }
+          ]
+        },
+        "options": {
+          "system": "Du bist Analyst bei trendymarketing, einer Agentur für Online-Marketing und KI-Vertriebssysteme. Du bekommst die wichtigsten Daten von der Startseite einer Firma. Daraus schreibst du ein kurzes Briefing für ein Erstgespräch.  Prüfe die SEO-Grundlagen mit dieser Checkliste: 1. -Wenn du auf der Website bist, öffne den Quellentext. 2. -Suche danach nach dem Title über die Suchfunktion im Quellentext. 3. -Suche danach nach der Metadiscription über die Suchfunktion im Quellentext. 4. -Suche danach nach dem H1 über die Suchfunktion im Quellentext. 5. -Suche danach nach dem H2 über die Suchfunktion im Quellentext. 6. -Mit diesen von dir gesammelten Informationen aus dem Quellentext stellst du mir eine ausarbeitung der Analyse zusammen.  Regeln: - Die Zeichenzahlen und die Anzahl der H1 stehen schon in den Daten. Verlass dich darauf und zähle nicht selbst. - Erfinde nichts. Was aus den Daten nicht hervorgeht, schreibst du als \"nicht erkennbar\". - seo_note ist eine Schulnote von 1 bis 6 für die SEO-Grundlagen. - seo_schwaechen und ansatzpunkte sind jeweils höchstens drei kurze Sätze.  Antworte ausschließlich mit JSON, ohne Text davor oder danach und ohne Codeblock, genau in diesem Format: {\"firma\": \"\", \"branche\": \"\", \"angebot\": \"\", \"seo_note\": 3, \"seo_schwaechen\": \"\", \"ansatzpunkte\": \"\", \"fazit\": \"\"} Die Zeichenzahlen und die Anzahl der H1 stehen schon in den Daten. Verlass dich darauf und zähle nicht selbst. Erfinde nichts. Was aus den Daten nicht hervorgeht, schreibst du als \"nicht erkennbar\". seo_note ist eine Schulnote von 1 bis 6 für die SEO-Grundlagen. seo_schwaechen und ansatzpunkte sind jeweils höchstens drei kurze Sätze.",
+          "maxTokens": 1200,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        224,
+        192
+      ],
+      "id": "4a255277-d7a6-4402-ba37-13c534ced663",
+      "name": "Claude analysiert",
+      "credentials": {
+        "anthropicApi": {
+          "id": "fBINadOSI63j4eUx",
+          "name": "Praktikum"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "64527332-8ad5-4370-aaf6-3b10deba605e",
+              "name": "url",
+              "value": "={{ $('Für Claude vorbereiten').item.json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "009b4afa-46cf-41f1-a161-e3ffee53b0ed",
+              "name": "analyse",
+              "value": "={{ JSON.parse($json.content[0].text.replace('```json', '').replace('```', '')) }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        592,
+        192
+      ],
+      "id": "d2e16ef0-0cd2-4466-88fd-787cdb94270e",
+      "name": "Antwort auspacken",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "dD5M6AcfiP24VqD4",
+          "mode": "list",
+          "cachedResultName": "firmen_checks",
+          "cachedResultUrl": "/projects/2h7GLkupQeqrNknN/datatables/dD5M6AcfiP24VqD4"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $json.url }}",
+            "firma": "={{ $json.analyse.firma }}",
+            "branche": "={{ $json.analyse.branche }}",
+            "angebot": "={{ $json.analyse.angebot }}",
+            "seo_note": "={{ $json.analyse.seo_note }}",
+            "seo_schwaechen": "={{ $json.analyse.seo_schwaechen }}",
+            "ansatzpunkte": "={{ $json.analyse.ansatzpunkte }}",
+            "fazit": "={{ $json.analyse.fazit }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "firma",
+              "displayName": "firma",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "branche",
+              "displayName": "branche",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "angebot",
+              "displayName": "angebot",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "seo_note",
+              "displayName": "seo_note",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "seo_schwaechen",
+              "displayName": "seo_schwaechen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ansatzpunkte",
+              "displayName": "ansatzpunkte",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fazit",
+              "displayName": "fazit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        992,
+        192
+      ],
+      "id": "8f774cb7-9815-464f-8508-a0588bf47d85",
+      "name": "In Tabelle speichern"
+    },
+    {
+      "parameters": {
+        "fromEmail": "admin@trendymarketing.de",
+        "toEmail": "={{ $('Webhook').item.json.body.email || 'info@trendymarketing.de' }}",
+        "subject": "=Firmen-Check: {{ $('Antwort auspacken').item.json.analyse.firma }}",
+        "html": "=<h2>{{ $('Antwort auspacken').item.json.analyse.firma }}</h2>\n<p><b>Website:</b> {{ $('Antwort auspacken').item.json.url }}<br>\n<b>Branche:</b> {{ $('Antwort auspacken').item.json.analyse.branche }}<br>\n<b>Angebot:</b> {{ $('Antwort auspacken').item.json.analyse.angebot }}<br>\n<b>SEO-Note:</b> {{ $('Antwort auspacken').item.json.analyse.seo_note }}</p>\n<p><b>SEO-Schwächen:</b> {{ $('Antwort auspacken').item.json.analyse.seo_schwaechen }}</p>\n<p><b>Ansatzpunkte:</b> {{ $('Antwort auspacken').item.json.analyse.ansatzpunkte }}</p>\n<p><b>Fazit:</b> {{ $('Antwort auspacken').item.json.analyse.fazit }}</p>",
+        "options": {
+          "appendAttribution": false,
+          "bccEmail": "info@trendymarketing.de"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1168,
+        192
+      ],
+      "id": "1b644813-e5cb-4d38-aa7a-60b8bfa9c285",
+      "name": "Briefing mailen",
+      "webhookId": "263f6e0d-df65-4e10-b13b-db8db72ac0d8",
+      "credentials": {
+        "smtp": {
+          "id": "UbZrV4fwMuzFFgC1",
+          "name": "Mail Praktikum"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "admin@trendymarketing.de",
+        "toEmail": "info@trendymarketing.de",
+        "subject": "Firmen-Check: Website nicht erreichbar",
+        "emailFormat": "text",
+        "text": "=Die Website {{ $('Adresse aufräumen').item.json.url }} konnte nicht geladen werden.\n\nFehlercode: {{ $json.error?.status || $json.details?.httpCode || $json.error?.code || 'unbekannt' }}\nGrund laut n8n: {{ (typeof $json.error === 'string' ? $json.error : ($json.details?.message || $json.error?.message || 'keine Angabe')).slice(0, 300) }}\n\nBitte Adresse prüfen.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        848,
+        64
+      ],
+      "id": "2e87bbf2-4e6f-4ea5-aa7a-d3defd2797ef",
+      "name": "Fehler melden",
+      "webhookId": "3f2dda95-addd-4418-a29d-74264779abd7",
+      "credentials": {
+        "smtp": {
+          "id": "UbZrV4fwMuzFFgC1",
+          "name": "Mail Praktikum"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "dD5M6AcfiP24VqD4",
+          "mode": "list",
+          "cachedResultName": "firmen_checks",
+          "cachedResultUrl": "/projects/2h7GLkupQeqrNknN/datatables/dD5M6AcfiP24VqD4"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "=url",
+              "keyValue": "={{ $json.url }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "c914f52b-605b-4485-b0cf-1902447288c4",
+      "name": "Node schon geprüft?"
+    },
+    {
+      "parameters": {
+        "fromEmail": "admin@trendymarketing.de",
+        "toEmail": "info@trendymarketing.de",
+        "subject": "Firmen-Check: Analyse fehlgeschlagen",
+        "emailFormat": "text",
+        "text": "=Bei {{ $('Für Claude vorbereiten').item.json.url }} hat Claude keine lesbare Antwort geliefert. Bitte nochmal prüfen.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1008,
+        416
+      ],
+      "id": "c2c975f3-d69c-4b91-b2a2-f42910e94ad9",
+      "name": "Analyse kaputt",
+      "webhookId": "1648f74d-2911-43d8-b1ab-780c2487fe55",
+      "credentials": {
+        "smtp": {
+          "id": "UbZrV4fwMuzFFgC1",
+          "name": "Mail Praktikum"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 4
+          },
+          "conditions": [
+            {
+              "id": "1e753f87-31a0-4af5-81ac-90185b4c67b5",
+              "leftValue": "={{ $json.analyse?.firma }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.4,
+      "position": [
+        800,
+        304
+      ],
+      "id": "1907f37b-06dc-4d1b-b631-1c38569411d4",
+      "name": "Analyse ok?"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "firmen-check",
+        "authentication": "headerAuth",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "469d025e-6db4-4aed-b8c8-cb48ce29cf7f",
+      "name": "Webhook",
+      "webhookId": "fe231617-b97c-44e9-b8bc-92fa23acf870",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "KiW6sn7Zvp7iUO76",
+          "name": "Firmen-Check_Schlüssel"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Adresse aufräumen": {
+      "main": [
+        [
+          {
+            "node": "Node schon geprüft?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Website holen": {
+      "main": [
+        [
+          {
+            "node": "Wichtiges auslesen",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fehler melden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wichtiges auslesen": {
+      "main": [
+        [
+          {
+            "node": "Für Claude vorbereiten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Für Claude vorbereiten": {
+      "main": [
+        [
+          {
+            "node": "Claude analysiert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude analysiert": {
+      "main": [
+        [
+          {
+            "node": "Antwort auspacken",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Antwort auspacken": {
+      "main": [
+        [
+          {
+            "node": "Analyse ok?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "In Tabelle speichern": {
+      "main": [
+        [
+          {
+            "node": "Briefing mailen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Node schon geprüft?": {
+      "main": [
+        [
+          {
+            "node": "Website holen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyse ok?": {
+      "main": [
+        [
+          {
+            "node": "In Tabelle speichern",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Analyse kaputt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Adresse aufräumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "bc03d7d6-7518-4411-9b46-7a3d009b930e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4d42e1340d9b8c21d7d3bbd75901eef3f7b93265a8bebf6e34f82d320e5a69bf"
+  },
+  "nodeGroups": [],
+  "id": "cRuddSzQbwLXBiRh",
+  "tags": []
+}

@@ -1,0 +1,134 @@
+{
+  "name": "Übung Wetter",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a573a215-64d7-41ea-b800-568868f8ee43",
+      "name": "When clicking ‘Execute workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://geocoding-api.open-meteo.com/v1/search?name=Friedland&count=1&language=de",
+        "options": {}
+      },
+      "id": "8ceb1106-5d0c-419b-92d8-c4db80745f2f",
+      "name": "Ort suchen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://api.open-meteo.com/v1/forecast?latitude={{ $json.results[0].latitude }}&longitude={{ $json.results[0].longitude }}&current=temperature_2m,wind_speed_10m",
+        "options": {}
+      },
+      "id": "b4d75a1c-f712-49d2-ad41-c9f9a17f85c7",
+      "name": "Wetter holen",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9fc8f46f-9c9a-4d8f-b39b-672c82ebe5dc",
+              "name": "wetter",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "37736406-7b39-4003-b0f0-4eca68fb8f7a",
+      "name": "Edit Files (Set)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://trendymarketing.app.n8n.cloud/webhook/firmen-check",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"website\": \"test.de\"}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        144,
+        144
+      ],
+      "id": "1d37c4be-1184-4987-82b3-561c76ea7d46",
+      "name": "Angriff"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Ort suchen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ort suchen": {
+      "main": [
+        [
+          {
+            "node": "Wetter holen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wetter holen": {
+      "main": [
+        [
+          {
+            "node": "Edit Files (Set)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "c524b36f-fdad-45f8-902d-7c89ff00bb82",
+  "meta": {
+    "instanceId": "4d42e1340d9b8c21d7d3bbd75901eef3f7b93265a8bebf6e34f82d320e5a69bf"
+  },
+  "nodeGroups": [],
+  "id": "ohXlTrVxeB7YasyL",
+  "tags": []
+}
